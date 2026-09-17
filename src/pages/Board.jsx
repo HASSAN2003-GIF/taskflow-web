@@ -8,7 +8,10 @@ export default function Board() {
   const navigate = useNavigate();
   const [board, setBoard] = useState(null);
   const [error, setError] = useState('');
+  
   const [newTaskTitles, setNewTaskTitles] = useState({});
+  // NEW: State for creating a new list
+  const [newListName, setNewListName] = useState('');
 
   const fetchBoard = useCallback(async () => {
     try {
@@ -41,7 +44,26 @@ export default function Board() {
       fetchBoard();
     } catch (err) {
       console.error('Failed to create task:', err);
-      alert('Could not create task. Check console.');
+      alert('Could not create task.');
+    }
+  };
+
+  // NEW: Function to create a new list
+  const handleCreateList = async () => {
+    if (!newListName || newListName.trim() === '') return;
+
+    try {
+      await api.post(`/boards/${id}/lists`, { 
+        name: newListName,
+        // Automatically calculate the next position based on how many lists currently exist
+        position: board.lists.length + 1 
+      });
+      
+      setNewListName(''); // Clear the input
+      fetchBoard();       // Refresh the UI
+    } catch (err) {
+      console.error('Failed to create list:', err);
+      alert('Could not create list. Check console.');
     }
   };
 
@@ -51,7 +73,6 @@ export default function Board() {
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    // 1. Optimistic UI Update
     const newBoard = { ...board };
     const sourceListIndex = newBoard.lists.findIndex(l => l.id.toString() === source.droppableId);
     const destListIndex = newBoard.lists.findIndex(l => l.id.toString() === destination.droppableId);
@@ -64,7 +85,6 @@ export default function Board() {
     
     setBoard(newBoard);
 
-    // 2. Background API Call
     try {
       await api.patch(`/tasks/${draggableId}/move`, {
         task_list_id: parseInt(destination.droppableId),
@@ -81,7 +101,17 @@ export default function Board() {
 
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
-      <h2 style={{ color: '#0f172a', marginBottom: '20px' }}>{board.name}</h2>
+      
+      {/* Navigation & Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' }}>
+        <button 
+          onClick={() => navigate('/dashboard')}
+          style={{ padding: '8px 12px', backgroundColor: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+        >
+          ← Back to Dashboard
+        </button>
+        <h2 style={{ color: '#0f172a', margin: 0 }}>{board.name}</h2>
+      </div>
       
       <DragDropContext onDragEnd={onDragEnd}>
         <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', overflowX: 'auto', flexGrow: 1, paddingBottom: '20px' }}>
@@ -154,9 +184,24 @@ export default function Board() {
             </div>
           ))}
           
-          <button style={{ minWidth: '300px', padding: '15px', backgroundColor: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>
-            + Add another list
-          </button>
+          {/* NEW: Functional Create List Input */}
+          <div style={{ minWidth: '300px', backgroundColor: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '8px', padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <input 
+              type="text" 
+              placeholder="New list name (e.g. Backlog)..."
+              value={newListName}
+              onChange={(e) => setNewListName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleCreateList(); }}
+              style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '14px' }}
+            />
+            <button 
+              onClick={handleCreateList}
+              style={{ padding: '8px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              + Add List
+            </button>
+          </div>
+
         </div>
       </DragDropContext>
     </div>

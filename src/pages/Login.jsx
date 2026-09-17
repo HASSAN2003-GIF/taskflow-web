@@ -15,7 +15,7 @@ export default function Login() {
       localStorage.setItem('access_token', response.data.access_token);
       
       // Redirect to the board automatically after successful login
-      navigate('/board/1'); 
+      navigate('/dashboard'); 
     } catch (err) {
       setError('Login failed. Please check your credentials.');
     }
