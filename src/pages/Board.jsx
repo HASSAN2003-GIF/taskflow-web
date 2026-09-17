@@ -10,7 +10,6 @@ export default function Board() {
   const [error, setError] = useState('');
   
   const [newTaskTitles, setNewTaskTitles] = useState({});
-  // NEW: State for creating a new list
   const [newListName, setNewListName] = useState('');
 
   const fetchBoard = useCallback(async () => {
@@ -48,22 +47,33 @@ export default function Board() {
     }
   };
 
-  // NEW: Function to create a new list
   const handleCreateList = async () => {
     if (!newListName || newListName.trim() === '') return;
 
     try {
       await api.post(`/boards/${id}/lists`, { 
         name: newListName,
-        // Automatically calculate the next position based on how many lists currently exist
         position: board.lists.length + 1 
       });
-      
-      setNewListName(''); // Clear the input
-      fetchBoard();       // Refresh the UI
+      setNewListName(''); 
+      fetchBoard();       
     } catch (err) {
       console.error('Failed to create list:', err);
       alert('Could not create list. Check console.');
+    }
+  };
+
+  // NEW: Function to delete a task
+  const handleDeleteTask = async (taskId) => {
+    // Add a quick confirmation dialog so users don't accidentally click it
+    if (!window.confirm('Are you sure you want to delete this task?')) return;
+
+    try {
+      await api.delete(`/tasks/${taskId}`);
+      fetchBoard(); // Refresh the UI to remove the card
+    } catch (err) {
+      console.error('Failed to delete task:', err);
+      alert('Could not delete task.');
     }
   };
 
@@ -102,7 +112,6 @@ export default function Board() {
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
       
-      {/* Navigation & Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' }}>
         <button 
           onClick={() => navigate('/dashboard')}
@@ -149,10 +158,28 @@ export default function Board() {
                               backgroundColor: 'white', padding: '15px', borderRadius: '6px', 
                               boxShadow: snapshot.isDragging ? '0 5px 15px rgba(0,0,0,0.15)' : '0 1px 3px rgba(0,0,0,0.1)', 
                               border: '1px solid #e2e8f0',
+                              // Use position relative so we can absolutely position the delete button
+                              position: 'relative',
                               ...provided.draggableProps.style 
                             }}
                           >
-                            <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#0f172a' }}>{task.title}</h4>
+                            {/* NEW: The Delete Button */}
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              style={{ 
+                                position: 'absolute', top: '10px', right: '10px', 
+                                background: 'transparent', border: 'none', color: '#ef4444', 
+                                cursor: 'pointer', fontSize: '16px', padding: '2px 6px',
+                                borderRadius: '4px'
+                              }}
+                              onMouseOver={(e) => e.target.style.backgroundColor = '#fee2e2'}
+                              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                              title="Delete task"
+                            >
+                              ✖
+                            </button>
+
+                            <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#0f172a', paddingRight: '20px' }}>{task.title}</h4>
                             {task.description && (
                               <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>{task.description}</p>
                             )}
@@ -184,7 +211,6 @@ export default function Board() {
             </div>
           ))}
           
-          {/* NEW: Functional Create List Input */}
           <div style={{ minWidth: '300px', backgroundColor: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '8px', padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <input 
               type="text" 
