@@ -1,12 +1,12 @@
 import axios from 'axios';
 
-// 1. Create a base Axios instance pointing to your Laravel server
+// 1. Assign the instance to the 'api' variable
 const api = axios.create({
-    baseURL: 'http://127.0.0.1:8000/api',
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    }
+  baseURL: 'https://taskflow-api-7y9e.onrender.com/api', // Updated to live URL
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
 });
 
 // 2. The Interceptor: Automatically attach the token to every request
@@ -24,4 +24,5 @@ api.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
+// 3. Export the 'api' variable once at the bottom
 export default api;
